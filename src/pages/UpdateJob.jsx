@@ -1,26 +1,69 @@
 import axios from "axios";
-import { useEffect, useState } from "react";
+import { useContext, useEffect, useState } from "react";
 import DatePicker from "react-datepicker";
 import "react-datepicker/dist/react-datepicker.css";
-import { useParams } from "react-router-dom";
+import toast from "react-hot-toast";
+import { useNavigate, useParams } from "react-router-dom";
+import { AuthContext } from "../providers/AuthProvider";
 
 const UpdateJob = () => {
-  const { id } = useParams();
+   const { user } = useContext(AuthContext);
   const [startDate, setStartDate] = useState(new Date());
-  const [job, setJob] = useState([]);
+  const [job, setJob] = useState({});
+  const navigate = useNavigate();
+  const { id } = useParams();
+
+
 
   useEffect(() => {
-    fetchJob();
+    fetchJobData();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [id]);
 
-  const fetchJob = async () => {
+  const fetchJobData = async () => {
     const { data } = await axios.get(
       `${import.meta.env.VITE_API_URL}/job/${id}`
     );
     setJob(data);
-    setStartDate(new Date(data?.deadline));
+    setStartDate(new Date(data.deadline));
   };
+
+  const handelSubmit = async (e) => {
+    e.preventDefault();
+    const form = e.target;
+    const title = form.job_title.value;
+    const email = form.email.value;
+    const deadline = startDate;
+    const category = form.category.value;
+    const min_price = parseFloat(form.min_price.value);
+    const max_price = parseFloat(form.max_price.value);
+    const description = form.description.value;
+
+    const formData = {
+      title,
+      buyar: {
+        email,
+        name: user?.displayName,
+        photo: user?.photoURL,
+      },
+      deadline,
+      min_price,
+      max_price,
+      category,
+      description,
+      bid_count: job.bid_count,
+    };
+
+    try {
+      // update and send db
+      await axios.put(`${import.meta.env.VITE_API_URL}/update-job/${id}`, formData);
+      toast.success("Job Update Successfully.");
+      navigate("/my-posted-jobs");
+    } catch (err) {
+      toast.error("Job Update failed!!!");
+    }
+  };
+
   return (
     <div className="flex justify-center items-center min-h-[calc(100vh-306px)] my-12">
       <section className=" p-2 md:p-6 mx-auto bg-white rounded-md shadow-md ">
@@ -28,7 +71,7 @@ const UpdateJob = () => {
           Update a Job
         </h2>
 
-        <form>
+        <form onSubmit={handelSubmit}>
           <div className="grid grid-cols-1 gap-6 mt-4 sm:grid-cols-2">
             <div>
               <label className="text-gray-700 " htmlFor="job_title">
