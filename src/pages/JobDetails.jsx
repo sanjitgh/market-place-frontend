@@ -5,7 +5,7 @@ import { compareAsc } from "date-fns";
 
 import DatePicker from "react-datepicker";
 import "react-datepicker/dist/react-datepicker.css";
-import { useParams } from "react-router-dom";
+import { useNavigate, useParams } from "react-router-dom";
 import { AuthContext } from "../providers/AuthProvider";
 import toast from "react-hot-toast";
 
@@ -14,8 +14,10 @@ const JobDetails = () => {
   const [job, setJob] = useState({});
   const { id } = useParams();
   const { user } = useContext(AuthContext);
+  const navigate = useNavigate();
 
   const {
+    _id,
     title,
     buyar,
     deadline,
@@ -38,13 +40,14 @@ const JobDetails = () => {
   }, [id]);
 
   // Handle form summit
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
     const form = e.target;
     const email = user?.email;
     const price = form.price.value;
     const comment = form.comment.value;
-    
+    const jobId = _id;
+
     // 0. auther validation
     if (user?.email === buyar?.email) return toast.error("Not permited");
 
@@ -58,8 +61,8 @@ const JobDetails = () => {
       return toast.error("Offer less or atleast equal value");
 
     // 3. Offer deadline validation
-    if(compareAsc(new Date(startDate), new Date(deadline)) === 1){
-      return toast.error('Offer a date within deadline')
+    if (compareAsc(new Date(startDate), new Date(deadline)) === 1) {
+      return toast.error("Offer a date within deadline");
     }
 
     const bitData = {
@@ -67,8 +70,16 @@ const JobDetails = () => {
       price,
       comment,
       startDate,
+      jobId
     };
-
+    try {
+      // make a bid and send db
+      await axios.post(`${import.meta.env.VITE_API_URL}/add-bid`, bitData);
+      toast.success("Job Bid Successfully.");
+      navigate("/my-bids");
+    } catch (err) {
+      toast.error("Job upload failed!!!");
+    }
   };
 
   return (
