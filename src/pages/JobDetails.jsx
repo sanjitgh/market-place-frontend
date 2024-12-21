@@ -1,15 +1,19 @@
 import axios from "axios";
 import moment from "moment";
-import { useEffect, useState } from "react";
+import { useContext, useEffect, useState } from "react";
+import { compareAsc } from "date-fns";
 
 import DatePicker from "react-datepicker";
 import "react-datepicker/dist/react-datepicker.css";
 import { useParams } from "react-router-dom";
+import { AuthContext } from "../providers/AuthProvider";
+import toast from "react-hot-toast";
 
 const JobDetails = () => {
   const [startDate, setStartDate] = useState(new Date());
   const [job, setJob] = useState({});
   const { id } = useParams();
+  const { user } = useContext(AuthContext);
 
   const {
     title,
@@ -26,7 +30,6 @@ const JobDetails = () => {
       `${import.meta.env.VITE_API_URL}/job/${id}`
     );
     setJob(data);
-    setStartDate(new Date(data.deadline));
   };
 
   useEffect(() => {
@@ -34,13 +37,47 @@ const JobDetails = () => {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [id]);
 
+  // Handle form summit
+  const handleSubmit = (e) => {
+    e.preventDefault();
+    const form = e.target;
+    const email = user?.email;
+    const price = form.price.value;
+    const comment = form.comment.value;
+    
+    // 0. auther validation
+    if (user?.email === buyar?.email) return toast.error("Not permited");
+
+    // 1. Deadline validaton
+    if (compareAsc(new Date(), new Date(deadline)) === 1) {
+      return toast.error("Deadline is over");
+    }
+
+    // 2. Price validation
+    if (price > max_price)
+      return toast.error("Offer less or atleast equal value");
+
+    // 3. Offer deadline validation
+    if(compareAsc(new Date(startDate), new Date(deadline)) === 1){
+      return toast.error('Offer a date within deadline')
+    }
+
+    const bitData = {
+      email,
+      price,
+      comment,
+      startDate,
+    };
+
+  };
+
   return (
     <div className="flex flex-col md:flex-row justify-around gap-5  items-center min-h-[calc(100vh-306px)] md:max-w-screen-xl mx-auto ">
       {/* Job Details */}
       <div className="flex-1  px-4 py-7 bg-white rounded-md shadow-md md:min-h-[350px]">
         <div className="flex items-center justify-between">
           <span className="text-sm font-light text-gray-800 ">
-             Deadline: {moment(deadline).format("L")}
+            Deadline: {moment(deadline).format("L")}
           </span>
           <span className="px-4 py-1 text-xs text-blue-800 uppercase bg-blue-200 rounded-full ">
             {category}
@@ -66,7 +103,7 @@ const JobDetails = () => {
               </p>
             </div>
             <div className="rounded-full object-cover overflow-hidden w-14 h-14">
-              <img src={buyar?.photo} alt="" />
+              <img referrerPolicy="no-referrer" src={buyar?.photo} alt="" />
             </div>
           </div>
           <p className="mt-6 text-lg font-bold text-gray-600 ">
@@ -80,7 +117,7 @@ const JobDetails = () => {
           Place A Bid
         </h2>
 
-        <form>
+        <form onSubmit={handleSubmit}>
           <div className="grid grid-cols-1 gap-6 mt-4 sm:grid-cols-2">
             <div>
               <label className="text-gray-700 " htmlFor="price">
@@ -102,6 +139,7 @@ const JobDetails = () => {
               <input
                 id="emailAddress"
                 type="email"
+                defaultValue={user?.email}
                 name="email"
                 disabled
                 className="block w-full px-4 py-2 mt-2 text-gray-700 bg-white border border-gray-200 rounded-md   focus:border-blue-400 focus:ring-blue-300 focus:ring-opacity-40  focus:outline-none focus:ring"
